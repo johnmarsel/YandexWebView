@@ -1,29 +1,26 @@
 package com.johnmarsel.yandexwebview
 
 import android.app.Dialog
-import android.content.DialogInterface
 import android.os.Bundle
 import androidx.appcompat.app.AlertDialog
-import androidx.core.os.bundleOf
 import androidx.fragment.app.DialogFragment
-
 
 class ExitDialogFragment : DialogFragment() {
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
 
         return activity?.let {
-            AlertDialog.Builder(it)
+            val builder = AlertDialog.Builder(it)
                 .setTitle("Exit")
-                .setMessage("Testing")
-                .setNegativeButton("No") { dialog, id ->
+                .setMessage("Do you want to exit? ")
+                .setPositiveButton("Yes") { dialog, id ->
                     dialog.dismiss()
                     requireActivity().finish()
                 }
-                .setPositiveButton("Yes") { dialog, id ->
+                .setNegativeButton("No") { dialog, id ->
                     dialog.dismiss()
                 }
-                .create()
+            builder.create()
         } ?: throw IllegalStateException("Activity cannot be null")
     }
 
