@@ -13,11 +13,11 @@ class ExitDialogFragment : DialogFragment() {
             val builder = AlertDialog.Builder(it)
                 .setTitle("Exit")
                 .setMessage("Do you want to exit? ")
-                .setPositiveButton("Yes") { dialog, id ->
+                .setPositiveButton("Yes") { dialog, _ ->
                     dialog.dismiss()
                     requireActivity().finish()
                 }
-                .setNegativeButton("No") { dialog, id ->
+                .setNegativeButton("No") { dialog, _ ->
                     dialog.dismiss()
                 }
             builder.create()

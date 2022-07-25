@@ -1,10 +1,14 @@
 package com.johnmarsel.yandexwebview
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.os.Bundle
-import android.view.KeyEvent
-import android.webkit.*
+import android.webkit.CookieManager
+import android.webkit.WebSettings
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
+import com.johnmarsel.yandexwebview.databinding.ActivityMainBinding
 
 
 private const val URL = "https://yandex.ru/"
@@ -12,41 +16,66 @@ private const val EXIT_DIALOG = "ExitDialog"
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var webView: WebView
+    private lateinit var binding: ActivityMainBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
-        webView = findViewById(R.id.web_view)
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
-        setUpWebview()
+        setUpWebView()
     }
 
     @SuppressLint("SetJavaScriptEnabled")
-    fun setUpWebview() {
-        webView.webViewClient = WebViewClient()
+    fun setUpWebView() {
+        binding.webView.webViewClient = object: WebViewClient() {
+            override fun doUpdateVisitedHistory(view: WebView?, url: String?, isReload: Boolean) {
+                url?.let { it ->
+                    if (it.contains("https://yandex.ru/maps")) {
+                        val launchIntent =
+                            packageManager.getLaunchIntentForPackage("ru.yandex.yandexmaps")
+                        launchIntent?.let { intent: Intent -> startActivity(intent) }
+                    } else if (it.contains("https://yandex.ru/pogoda")) {
+                        val launchIntent =
+                            packageManager.getLaunchIntentForPackage("ru.yandex.weatherplugin")
+                        launchIntent?.let { intent: Intent -> startActivity(intent) }
+                    } else {
+                        super.doUpdateVisitedHistory(view, url, isReload)
+                    }
+                }
+            }
+        }
         val cookieManager: CookieManager = CookieManager.getInstance()
         cookieManager.setAcceptCookie(true)
-        cookieManager.setAcceptThirdPartyCookies(webView, true)
-        webView.apply {
+        cookieManager.setAcceptThirdPartyCookies(binding.webView, true)
+        binding.webView.apply {
             settings.javaScriptEnabled = true
             settings.cacheMode = WebSettings.LOAD_DEFAULT
-            loadUrl(URL)
+            val prefs = getSharedPreferences(packageName, MODE_PRIVATE)
+            val lastUrl = prefs.getString("lastUrl", "") ?: ""
+            if (lastUrl.isEmpty()) {
+                loadUrl(URL)
+            } else {
+                loadUrl(lastUrl)
+            }
         }
     }
 
     override fun onBackPressed() {
-        super.onBackPressed()
-        if (webView.canGoBack()) webView.goBack() else super.onBackPressed()
-    }
-
-    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        return if (keyCode == KeyEvent.KEYCODE_BACK && webView.canGoBack()) {
-            webView.goBack()
-            true
+        if (binding.webView.canGoBack()) {
+            binding.webView.goBack()
         } else {
             ExitDialogFragment.newInstance().show(supportFragmentManager, EXIT_DIALOG)
-            false
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        val prefs = getSharedPreferences(packageName, MODE_PRIVATE)
+        val edit = prefs.edit()
+        edit.apply {
+            putString("lastUrl", binding.webView.url)
+            commit()
         }
     }
 }
